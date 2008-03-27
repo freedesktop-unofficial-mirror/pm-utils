@@ -93,13 +93,13 @@ parse_cmdline()
 {
 	local param cmd opts found x
 	for param in "$@"; do
-		cmd="${param#--}"
+		cmd="$(printf '%s' "${param#--}" |tr - _)"
 		# Skip if we do not have a function to invoke
 		# This _must_ be a shell function.  
 		type "$cmd" |grep -q 'is a shell function' || continue
 		for x in $PM_CMDLINE; do
-			[ "$param" != "$x" -a -z "$found"] || continue
-			[ "${x#--}" = "$cmd" ] && { found="true"; continue; }
+			[ "$param" != "$x" -a -z "$found" ] || continue
+			[ "$x" = "$param" ] && { found="true"; continue; }
 			[ -z "${x##--*}" ] && break
 			opts="$opts $x"
 		done
