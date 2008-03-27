@@ -6,27 +6,25 @@ before_hooks()
 	disablehook 99video "disabled by uswsusp"
 }
 
+# functions to handle commandline parameters
+cmdl_quirk_dpms_on() 	   	{ ; } # no-op
+cmdl_quirk_dpms_suspend() 	{ ; } # no-op
+cmdl_quirk_radeon_off() 	{ OPTS="$OPTS --radeontool"; }
+cmdl_quirk_reset_brightness() 	{ ; } # no-op
+cmdl_quirk_s3_bios() 		{ ACPI_SLEEP=$((ACPI_SLEEP + 1)); }
+cmdl_quirk_s3_mode() 		{ ACPI_SLEEP=$((ACPI_SLEEP + 2)) ; }
+cmdl_quirk_vbe_post() 		{ OPTS="$OPTS --vbe_post" ; }
+cmdl_quirk_vbemode_restore() 	{ OPTS="$OPTS --vbe_mode" ; }
+cmdl_quirk_vbestate_restore() 	{ OPTS="$OPTS --vbe_save" ; }
+cmdl_quirk_vga_mode3() 		{ ; } # no-op
+cmdl_quirk_save_pci() 		{ OPTS="$OPTS --pci_save" ; }
+cmdl_quirk_none() 		{ QUIRK_NONE="true" ; }
+
 get_quirks()
 {
 	OPTS=""
 	ACPI_SLEEP=0
-	for opt in $PM_CMDLINE; do
-		case "${opt##--quirk-}" in # just quirks, please
-			dpms-on) 	   ;; # no-op
-			dpms-suspend) 	   ;; # no-op
-			radeon-off) 	   OPTS="$OPTS --radeontool" ;;
-			reset-brightness)  ;; # no-op
-			s3-bios) 	   ACPI_SLEEP=$((ACPI_SLEEP + 1)) ;;
-			s3-mode) 	   ACPI_SLEEP=$((ACPI_SLEEP + 2)) ;;
-			vbe-post) 	   OPTS="$OPTS --vbe_post" ;;
-			vbemode-restore)   OPTS="$OPTS --vbe_mode" ;;
-			vbestate-restore)  OPTS="$OPTS --vbe_save" ;;
-			vga-mode3) 	   ;; # no-op
-			save-pci)          OPTS="$OPTS --pci_save" ;;
-			none) 		   QUIRK_NONE="true" ;;
-			*) continue ;;
-		esac
-	done
+	parse_cmdline
 	[ $ACPI_SLEEP -ne 0 ] && OPTS="$OPTS --acpi_sleep $ACPI_SLEEP"
 	# if we were passed quirk-none and other quirks, log it.
 	[ "$QUIRK_NONE" = "true" ] && [ "$OPTS" ] && [ $ACPI_SLEEP -ne 0 ] && {
@@ -55,7 +53,6 @@ check_hibernate()
 	[ -c /dev/snapshot ] &&
 	command_exists s2disk	
 }
-
 do_hibernate()
 {
 	s2disk

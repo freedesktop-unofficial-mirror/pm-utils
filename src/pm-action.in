@@ -29,7 +29,7 @@
 . "@PM-UTILS-LIBDIR@/pm-functions"
 
 # save the command line parameters for the hooks.
-help()
+cmdl_help()
 {
 	echo "${0##*/} [options]"
 	echo
@@ -49,11 +49,7 @@ take_suspend_lock || exit 1
 # make sure we release the lock no matter how we exit
 trap remove_suspend_lock 0
 
-while [ $# -gt 0 ]
-do
-	[ "$1" = "--help" ] && help
-	shift
-done
+parse_cmdline
 
 METHOD="$(echo ${0##*pm-} |tr - _)"
 

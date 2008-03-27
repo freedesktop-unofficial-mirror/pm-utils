@@ -9,23 +9,25 @@
 
 . "${PM_FUNCTIONS}"
 
-for opt in $PM_CMDLINE; do
-	case "${opt##--quirk-}" in # just quirks, please
-		dpms-on) 	   QUIRK_DPMS_ON="true" ;;
-		dpms-suspend) 	   QUIRK_DPMS_SUSPEND="true" ;;
-		radeon-off) 	   QUIRK_RADEON_OFF="true" ;;
-		reset-brightness)  QUIRK_RESET_BRIGHTNESS="true" ;;
-		s3-bios) 	   QUIRK_S3_BIOS="true" ;;
-		s3-mode) 	   QUIRK_S3_MODE="true" ;;
-		vbe-post) 	   QUIRK_VBE_POST="true" ;;
-		vbemode-restore)   QUIRK_VBEMODE_RESTORE="true" ;;
-		vbestate-restore)  QUIRK_VBESTATE_RESTORE="true" ;;
-		vga-mode3) 	   QUIRK_VGA_MODE_3="true" ;;
-		none) 		   QUIRK_NONE="true" ;;
-		*) continue ;;
-	esac
-done
+quirk_count=0
+incr_qc() { quirk_count=$(($quirk_count + 1)); }
+# commandline parser functions		
+cmdl_quirk_dpms_on() 		{ incr_qc; cQUIRK_DPMS_ON="true"; }
+cmdl_quirk_dpms_suspend() 	{ incr_qc; QUIRK_DPMS_SUSPEND="true"; }
+cmdl_quirk_radeon_off() 	{ incr_qc; QUIRK_RADEON_OFF="true"; }
+cmdl_quirk_reset_brightness() 	{ incr_qc; QUIRK_RESET_BRIGHTNESS="true"; }
+cmdl_quirk_s3_bios() 		{ incr_qc; QUIRK_S3_BIOS="true"; }
+cmdl_quirk_s3_mode() 		{ incr_qc; QUIRK_S3_MODE="true"; }
+cmdl_quirk_vbe_post() 		{ incr_qc; QUIRK_VBE_POST="true"; }
+cmdl_quirk_vbemode_restore() 	{ incr_qc; QUIRK_VBEMODE_RESTORE="true"; }
+cmdl_quirk_vbestate_restore() 	{ incr_qc; QUIRK_VBESTATE_RESTORE="true"; }
+cmdl_quirk_vga_mode3() 		{ incr_qc; QUIRK_VGA_MODE_3="true"; }
+cmdl_quirk_none() 		{ QUIRK_NONE="true"; }
 
+parse_cmdline
+
+[ $quirk_count -gt 0 -a "$QUIRK_NONE" = "true" ] && \
+	log "$0: Inconsistent quirks! --quirk-none and $PM_CMDLINE"
 
 reset_brightness()
 {

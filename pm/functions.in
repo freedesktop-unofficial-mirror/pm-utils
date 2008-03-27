@@ -91,20 +91,13 @@ _rmmod()
 # We do NOT deal with -p or --parameter=bar style parameters.
 parse_cmdline() 
 {
-	local param cmd opts found x
-	for param in "$@"; do
-		cmd="$(printf '%s' "${param#--}" |tr - _)"
+	local param cmd found 
+	for param in $PM_CMDLINE; do
+		cmd="cmdl_$(printf '%s' "${param#--}" |tr - _)"
 		# Skip if we do not have a function to invoke
 		# This _must_ be a shell function.  
 		type "$cmd" |grep -q 'is a shell function' || continue
-		for x in $PM_CMDLINE; do
-			[ "$param" != "$x" -a -z "$found" ] || continue
-			[ "$x" = "$param" ] && { found="true"; continue; }
-			[ -z "${x##--*}" ] && break
-			opts="$opts $x"
-		done
-		[ -n "$found" ] && $cmd $opts
-		found=""
+		$cmd $opts
 	done
 }
 
