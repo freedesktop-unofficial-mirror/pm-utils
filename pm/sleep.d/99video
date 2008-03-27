@@ -68,7 +68,7 @@ resume_fbcon()
 }
 
 # Some tiny helper functions for quirk handling
-quirk() { [ "$1" = "true" ] && [ -z $QUIRK_NONE ]; }
+quirk() { [ "$1" = "true" ]; }
 
 # save/restore vbe state
 vbe_savestate() { vbe vbestate save |savestate vbestate; }

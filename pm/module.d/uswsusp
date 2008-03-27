@@ -28,8 +28,12 @@ get_quirks()
 		esac
 	done
 	[ $ACPI_SLEEP -ne 0 ] && OPTS="$OPTS --acpi_sleep $ACPI_SLEEP"
-	# if we were told to ignore quirks, do so.
-	[ "$QUIRK_NONE" = "true" ] && OPTS=""
+	# if we were passed quirk-none and other quirks, log it.
+	[ "$QUIRK_NONE" = "true" ] && [ "$OPTS" ] && [ $ACPI_SLEEP -ne 0 ] && {
+		log "$0: --quirk-none present, but other quirks were also passed."
+		log "Command line parameters were $PM_CMDLINE"
+		log "Please report this sitation to pm-utils@lists.freedesktop.org".
+	}
 }
 
 check_suspend()
