@@ -84,6 +84,32 @@ _rmmod()
 	fi
 }
 
+# Loop through $PM_CMDLINE looking for interesting strings
+# When we find one, do a bit of parsing and call the appropriate function.
+# Pass your interesting strings as parameters.
+# We only deal with --parameter style parameters.
+# We do NOT deal with -p or --parameter=bar style parameters.
+parse_cmdline() 
+{
+	local param cmd opts found x
+	for param in "$@"; do
+		cmd="${param#--}"
+		# Skip if we do not have a function to invoke
+		# This _must_ be a shell function.  
+		type "$cmd" |grep -q 'is a shell function' || continue
+		for x in $PM_CMDLINE; do
+			[ "$param" != "$x" -a -z "$found"] || continue
+			[ "${x#--}" = "$cmd" ] && { found="true"; continue; }
+			[ -z "${x##--*}" ] && break
+			opts="$opts $x"
+		done
+		[ -n "$found" ] && $cmd $opts
+		found=""
+	done
+}
+
+
+
 # this recursively unloads the given modules and all that depend on it
 # first parameter is the module to be unloaded
 modunload()
