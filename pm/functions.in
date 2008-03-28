@@ -87,18 +87,36 @@ _rmmod()
 # Loop through $PM_CMDLINE looking for interesting strings
 # When we find one, do a bit of parsing and call the appropriate function.
 # Pass your interesting strings as parameters.
-# We only deal with --parameter style parameters.
-# We do NOT deal with -p or --parameter=bar style parameters.
+# We do NOT deal with -p style parameters.
 parse_cmdline() 
 {
-	local param cmd found 
+	local param cmd opt opts
+        cmd=""	
 	for param in $PM_CMDLINE; do
+		# test to see if this param is a parameter
+		[ "${param#--}" = "$param" ] && {
+			# save option for later.
+			opts="$opts $param"
+			continue
+		}
+		[ "$cmd" ] && {
+			# Execute the saved command with args.
+			command_exists "$cmd" && $cmd $opts
+			cmd=""
+			opts=""
+		}
+		# test to see if this param is of the --foo=bar type
+		opt="${param#*=}"
+		if [ "$opt" != "$param" ]; then
+			# it is. extract the option and rewrite param.
+			opts="$opt"
+			param="${param%%=*}"
+		fi
 		cmd="cmdl_$(printf '%s' "${param#--}" |tr - _)"
-		# Skip if we do not have a function to invoke
-		# This _must_ be a shell function.  
-		type "$cmd" |grep -q 'is a shell function' || continue
-		$cmd $opts
+		opt=""
 	done
+	# execute the last command from our loop.
+	command_exists "$cmd" && $cmd $opts
 }
 
 
