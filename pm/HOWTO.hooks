@@ -71,3 +71,10 @@ convenience functions available:
 11: disablehook
 	Prevent a hook from running.  The exact name of the hook (including
 	numberic prefix) must be passed.
+12: parse_cmdline
+	Loop through the commandline parameters, and call appropriate
+	functions for each one.  For example, if you have a function
+	named 'cmdl_help_me', it will be called when parse_cmdline encounters
+	a parameter named '--help-me'.
+	parse_cmdl does not currently know about options passed to parameters.
+	That feature will be added in a later release.
