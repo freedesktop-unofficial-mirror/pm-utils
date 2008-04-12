@@ -86,7 +86,6 @@ _rmmod()
 
 # Loop through $PM_CMDLINE looking for interesting strings
 # When we find one, do a bit of parsing and call the appropriate function.
-# Pass your interesting strings as parameters.
 # We do NOT deal with -p style parameters.
 parse_cmdline() 
 {
@@ -94,14 +93,16 @@ parse_cmdline()
         cmd=""	
 	for param in $PM_CMDLINE; do
 		# test to see if this param is a parameter
+	        # Options do not have -- in front of them.
 		[ "${param#--}" = "$param" ] && {
 			# save option for later.
 			opts="$opts $param"
 			continue
 		}
+		# it isn't. If we have a complete command, execute it along
+		# with any arguments we have accumulated.
 		[ "$cmd" ] && {
-			# Execute the saved command with args.
-			command_exists "$cmd" && $cmd $opts
+			command_exists "$cmd" && "$cmd" $opts
 			cmd=""
 			opts=""
 		}
