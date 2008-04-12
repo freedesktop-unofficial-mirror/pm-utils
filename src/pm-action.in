@@ -28,7 +28,6 @@
 
 . "@PM-UTILS-LIBDIR@/pm-functions"
 
-# save the command line parameters for the hooks.
 cmdl_help()
 {
 	echo "${0##*/} [options]"
@@ -43,7 +42,6 @@ if [ "$(id -u)" != "0" ]; then
 	echo This utility may only be run by the root user. 1>&2
 	exit 1
 fi
-# 
 take_suspend_lock || exit 1
 
 # make sure we release the lock no matter how we exit
@@ -73,10 +71,10 @@ rm -f "${INHIBIT}"
 # run the sleep hooks
 log "$(date): Running hooks for $ACTION."
 run_hooks sleep "$ACTION"
-log -n "$(date): $METHOD now."
+log "$(date): ${METHOD}ing"
 # Sleep only if we know how and if a hook did not inhibit us.
 command_exists "do_$METHOD" && [ ! -e "$INHIBIT" ] && { sync; "do_$METHOD"; }
-
+log "$(date): Awake."
 log "$(date): Running hooks for $REVERSE"
 # run the sleep hooks in reverse with the wakeup action
 run_hooks sleep "$REVERSE" reverse

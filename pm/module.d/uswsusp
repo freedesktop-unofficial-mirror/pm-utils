@@ -3,6 +3,7 @@
 # disable processing of 99video
 before_hooks()
 {
+	disablehook 00clear "disabled by uswsusp"
 	disablehook 99video "disabled by uswsusp"
 }
 
@@ -11,8 +12,8 @@ cmdl_quirk_dpms_on() 	   	{ ; } # no-op
 cmdl_quirk_dpms_suspend() 	{ ; } # no-op
 cmdl_quirk_radeon_off() 	{ OPTS="$OPTS --radeontool"; }
 cmdl_quirk_reset_brightness() 	{ ; } # no-op
-cmdl_quirk_s3_bios() 		{ ACPI_SLEEP=$((ACPI_SLEEP + 1)); }
-cmdl_quirk_s3_mode() 		{ ACPI_SLEEP=$((ACPI_SLEEP + 2)) ; }
+cmdl_quirk_s3_bios() 		{ ACPI_SLEEP=$(($ACPI_SLEEP + 1)); }
+cmdl_quirk_s3_mode() 		{ ACPI_SLEEP=$(($ACPI_SLEEP + 2)) ; }
 cmdl_quirk_vbe_post() 		{ OPTS="$OPTS --vbe_post" ; }
 cmdl_quirk_vbemode_restore() 	{ OPTS="$OPTS --vbe_mode" ; }
 cmdl_quirk_vbestate_restore() 	{ OPTS="$OPTS --vbe_save" ; }
@@ -36,7 +37,8 @@ get_quirks()
 
 check_suspend()
 {
-	[ -e /dev/pmu ] && return 0
+	command_exists s2ram || return 1
+	[ -c /dev/pmu ] && return 0
 	grep -q mem /sys/power/state && return 0
 }
 
