@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# vim: noexpandtab
 # Simple suspend script
 #
 # Copyright 2006 Red Hat, Inc.
@@ -51,12 +51,20 @@ parse_cmdline
 
 METHOD="$(echo ${0##*pm-} |tr - _)"
 
-"check_$METHOD" || { echo "System does not support $METHOD sleep."; exit 1; }
+command_exists "check_$METHOD" && command_exists "do_$METHOD" || {
+	log "pm-utils does not know how to $METHOD on this system."
+	exit 1
+}
+
+"check_$METHOD" || {
+	log "This system does not support $METHOD as a sleep method."
+	exit 1
+}
 
 case "$METHOD" in
 	suspend*) 	ACTION=suspend;   REVERSE=resume ;;
 	hibernate) 	ACTION=hibernate; REVERSE=thaw ;;
-	*)		echo "Don't know how to ${METHOD}."
+	*)		echo "Cannot happen.  Please file a bug against pm-utils."
 			exit 1 ;;
 esac
 
@@ -71,12 +79,16 @@ rm -f "${INHIBIT}"
 # run the sleep hooks
 log "$(date): Running hooks for $ACTION."
 run_hooks sleep "$ACTION"
-log "$(date): ${METHOD}ing"
 # Sleep only if we know how and if a hook did not inhibit us.
-command_exists "do_$METHOD" && [ ! -e "$INHIBIT" ] && { sync; "do_$METHOD"; }
-log "$(date): Awake."
+if [ ! -e "$INHIBIT" ]; then
+	log "$(date): performing $METHOD"
+	sync
+	"do_$METHOD"
+	log "$(date): Awake."
+else
+	log "$(date): Inhibit found, will not perform $METHOD"
+fi
 log "$(date): Running hooks for $REVERSE"
 # run the sleep hooks in reverse with the wakeup action
 run_hooks sleep "$REVERSE" reverse
 log "$(date): Finished."
-
