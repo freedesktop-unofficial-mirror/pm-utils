@@ -1,6 +1,6 @@
 AC_PREREQ(2.52)
 
-AC_INIT(pm-utils, 1.1.1)
+AC_INIT(pm-utils, 1.2.0)
 AC_CONFIG_SRCDIR(src)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AM_CONFIG_HEADER(config.h)
@@ -21,8 +21,8 @@ CPPFLAGS="$CPPFLAGS -g"
 dnl ---------------------------------------------------------------------------
 dnl - Manual page build
 dnl ---------------------------------------------------------------------------
-AC_PATH_PROG(DOCBOOK2MAN, docbook2man, no)
-AM_CONDITIONAL(HAVE_DOCBOOK, [test "x$DOCBOOK2MAN" != xno])
+AC_PATH_PROG(XMLTO, xmlto, no)
+AM_CONDITIONAL(HAVE_XMLTO, [test "x$XMLTO" != xno])
 
 dnl ---------------------------------------------------------------------------
 dnl - Make paths available for source files

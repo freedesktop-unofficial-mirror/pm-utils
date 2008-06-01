@@ -228,34 +228,31 @@ restorestate()
 }
 
 # If we were told by the user to ignore some parameters from HAL.
-# remove them from our list.  This implementation is rather stupid.
+# remove parameters from our list
 remove_parameters() {
-	local x y
+	local p
 	if [ "$1" = "all" ]; then
-	    for p in "${STORAGEDIR}/parm:"*; do 
-		[ -O "$p" ] && rm -f "$p"; 
-	    done
+	    echo '' > "$PARAMETERS.new"
 	else
+	    echo '' >"$PARAMETERS.rm"
 	    for p in "$@"; do
-		[ -O "${STORAGEDIR}/parm:$p" ] && \
-		    rm "${STORAGEDIR}/parm:$p"
+		echo "$p" >> "$PARAMETERS.rm"
 	    done
+	    # let grep do the dirty work.
+	    grep -vxFf "$PARAMETERS.rm" "$PARAMETERS" > "$PARAMETERS.new"
 	fi
-	touch "${STORAGEDIR}/new-parm"
+	cp -f "$PARAMETERS.new" "$PARAMETERS"
 }
 
 # Add a parameter to our commandline parameters. 
 add_parameters() {
+	remove_parameters "$@" # no dups, please.
 	for x in "$@"; do
-	    touch "${STORAGEDIR}/parm:${x}"
+	    echo "$x" >>"$PARAMETERS"
 	done
-	# update for next hook.
-	touch "${STORAGEDIR}/new-parm"
 }
 
-# Remove a parameter from our commandline parameters.  
+# Get our commandline parameters
 get_parameters() {
-	for x in "${STORAGEDIR}/parm:"*; do
-	    [ -O "$x" ] && echo "${x##*:}"
-	done
+       cat "$PARAMETERS"
 }

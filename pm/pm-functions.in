@@ -42,15 +42,12 @@ SUSPEND_MODULES=""
 HOOK_BLACKLIST=""
 ADD_PARAMETERS=""
 DROP_PARAMETERS=""
+PARAMETERS="${STORAGEDIR}/parameters"
+PM_CMDLINE="$*"
 
 [ -f "${PM_UTILS_LIBDIR}"/defaults ] && . "${PM_UTILS_LIBDIR}"/defaults
 
 set +a
-
-# save our parameter list. Second stupidest way of doing this.
-for x in "$@"; do
-    touch "${STORAGEDIR}/parm:${x}"
-done
 
 for cfg in "${PM_UTILS_ETCDIR}"/config.d/*[!~] ; do
 	[ -f "$cfg" ] || continue
@@ -86,11 +83,10 @@ log()
 # update PM_CMDLINE iff someone changed our parameters
 update_parameters()
 {
-	[ -f "${STORAGEDIR}/new-parm" ] || return
+	[ -f "$PARAMETERS.new" ] || return
 	export PM_CMDLINE="$(get_parameters)"
-	rm "${STORAGEDIR}/new-parm"
+	rm -f "$PARAMETERS.new"
 }
-
 
 # if the user asked us to blacklist any hooks, do it.
 load_hook_blacklist()
@@ -113,13 +109,18 @@ load_hook_parameters()
 take_suspend_lock()
 {
 	try_lock "pm-utils.lock" || return 1
+	# clean up from the last run
+	rm -rf "${STORAGEDIR}"
 	mkdir -p "${STORAGEDIR}"
+        # save our parameter list.
+	[ -f "$PARAMETERS" ] || echo '' >"$PARAMETERS"
+	add_parameters $PM_CMDLINE
+	update_parameters
 	return 0
 }
 
 remove_suspend_lock()
 {
-	rm -rf "${STORAGEDIR}"
 	release_lock "pm-utils.lock"
 }
 
