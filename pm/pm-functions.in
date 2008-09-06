@@ -230,17 +230,15 @@ for sleep_method in $SLEEP_MODULE; do
 done
 
 # fall back on kernel methods if not already claimed
-if [ "$SUSPEND_METHOD" = "none" ] && \
-    { [ -c /dev/pmu ] || grep -q mem /sys/power/state; } then
-    SUSPEND_METHOD=kernel
-    do_suspend()
-    {
-	if [ -c /dev/pmu ]; then
-		pm-pmu --suspend
-	else
-		echo -n "mem" > /sys/power/state
-	fi
-    }
+if [ "$SUSPEND_METHOD" = "none" ]; then
+    # prefer /sys/power/state over /dev/pmu if both exist
+    if grep -q mem /sys/power/state; then
+	SUSPEND_METHOD=kernel
+	do_suspend() { echo -n mem >/sys/power/state; }
+    elif [ -c /dev/pmu ] && pm-pmu --check; then
+	SUSPEND_METHOD=kernel
+	do_suspend() { pm-pmu --suspend; }
+    fi
 fi
 
 if [ "$HIBERNATE_METHOD" = "none" ] && \
