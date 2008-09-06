@@ -44,6 +44,9 @@ DROP_PARAMETERS=""
 PARAMETERS="${STORAGEDIR}/parameters"
 INHIBIT="${STORAGEDIR}/inhibit"
 PM_CMDLINE="$*"
+SUSPEND_METHOD="none"
+HIBERNATE_METHOD="none"
+SUSPEND_HYBRID_METHOD="none"
 
 # when loading configuration files, allow stash-specific ones
 # to override the pm-utils global ones.
@@ -203,12 +206,27 @@ init_logfile()
 	exec > "$1" 2>&1
 }
 
-
-SLEEP_FUNCTIONS="${PM_UTILS_LIBDIR}/module.d/${SLEEP_MODULE}"
-[ -f "${SLEEP_FUNCTIONS}" ] || { 
-	echo "Requested sleep module $SLEEP_MODULE not available."
-	exit 1
+check_suspend() {
+    [ "$SUSPEND_METHOD" != "none" ]
 }
 
-. "${SLEEP_FUNCTIONS}"
+check_hibernate() {
+    [ "$HIBERNATE_METHOD" != "none" ]
+}
 
+check_suspend_hybrid() {
+    [ "$SUSPEND_HYBRID_METHOD" != "none" ]
+}
+
+if [ "$SLEEP_MODULE" = "auto" ]; then 
+    SLEEP_MODULE="tuxonice uswsusp"
+fi
+
+SLEEP_FUNCTIONS="${PM_UTILS_LIBDIR}/module.d/${SLEEP_MODULE}"
+
+for sleep_method in $sleep_methods; do
+    . "${PM_UTILS_LIBDIR}/module.d/${sleep_method}"
+done
+
+# always load in-kernel methods last
+. "${PM_UTILS_LIBDIR}/module.d/kernel"
