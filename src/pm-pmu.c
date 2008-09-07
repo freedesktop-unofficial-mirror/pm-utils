@@ -83,20 +83,20 @@ int main(int argc, char *argv[])
         case 1: ret = print_usage(stdout, 0); break;
         case 2: /* this is intentional */
         case 3:
-        if (access("/dev/pmu", W_OK)) {
-            ret = 1;
-        } else {
-            if ((fd = open("/dev/pmu", O_RDWR)) < 0) {
-                perror("open");
-                return 1;
-            }
+            if (access("/dev/pmu", W_OK)) {
+                ret = 1;
+            } else {
+                if ((fd = open("/dev/pmu", O_RDWR)) < 0) {
+                    perror("open");
+                    return 1;
+                }
             
-            ret = pmu_can_sleep(fd);
-            if (!ret && task == 3) 
-                ret = pmu_sleep(fd);
-            close(fd);
-        }
-        break;
+                ret = pmu_can_sleep(fd);
+                if (!ret && task == 3) 
+                    ret = pmu_sleep(fd);
+                close(fd);
+            }
+            break;
     }
    return ret; 
 }
