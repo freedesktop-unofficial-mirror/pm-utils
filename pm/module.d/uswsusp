@@ -1,92 +1,27 @@
 #!/bin/sh
 
-# disable processing of 99video
-before_hooks()
-{
-	disablehook 90chvt "disabled by uswsusp"
-	disablehook 99video "disabled by uswsusp"
-}
+if [ "$HIBERNATE_METHOD" = "none" ] && \
+    [ -f /sys/power/disk ] && \
+    grep -q disk /sys/power/state && \
+    [ -c /dev/snapshot ] &&
+    command_exists s2disk; then
+    HIBERNATE_METHOD="uswsusp"
 
-# functions to handle commandline parameters
-cmdl_quirk_dpms_on() 	   	{ ; } # no-op
-cmdl_quirk_dpms_suspend() 	{ ; } # no-op
-cmdl_quirk_radeon_off() 	{ OPTS="$OPTS --radeontool"; }
-cmdl_quirk_reset_brightness() 	{ ; } # no-op
-cmdl_quirk_s3_bios() 		{ ACPI_SLEEP=$(($ACPI_SLEEP + 1)); }
-cmdl_quirk_s3_mode() 		{ ACPI_SLEEP=$(($ACPI_SLEEP + 2)) ; }
-cmdl_quirk_vbe_post() 		{ OPTS="$OPTS --vbe_post" ; }
-cmdl_quirk_vbemode_restore() 	{ OPTS="$OPTS --vbe_mode" ; }
-cmdl_quirk_vbestate_restore() 	{ OPTS="$OPTS --vbe_save" ; }
-cmdl_quirk_vga_mode3() 		{ ; } # no-op
-cmdl_quirk_save_pci() 		{ OPTS="$OPTS --pci_save" ; }
-cmdl_quirk_none() 		{ QUIRK_NONE="true" ; }
-
-get_quirks()
-{
-	OPTS=""
-	ACPI_SLEEP=0
-	parse_cmdline
-	[ $ACPI_SLEEP -ne 0 ] && OPTS="$OPTS --acpi_sleep $ACPI_SLEEP"
-	# if we were passed quirk-none and other quirks, log it.
-	[ "$QUIRK_NONE" = "true" ] && [ "$OPTS" ] && [ $ACPI_SLEEP -ne 0 ] && {
-		log "$0: --quirk-none present, but other quirks were also passed."
-		log "Command line parameters were $PM_CMDLINE"
-		log "Please report this sitation to pm-utils@lists.freedesktop.org".
-	}
-}
-
-check_suspend()
-{
-	command_exists s2ram || return 1
-	[ -c /dev/pmu ] || grep -q mem /sys/power/state
-}
-
-do_suspend()
-{
-	get_quirks
-	s2ram --force $OPTS
-}
-
-check_hibernate()
-{
-	[ -f /sys/power/disk ] && \
-	grep -q disk /sys/power/state && \
-	[ -c /dev/snapshot ] &&
-	command_exists s2disk	
-}
-do_hibernate()
-{
+    do_hibernate()
+    {
 	s2disk
-}
+    }
+fi
 
-check_suspend_hybrid()
-{
-	grep -q mem /sys/power/state && \
-	command_exists s2both && \
-	check_hibernate
-}
 
-do_suspend_hybrid()
-{
-	get_quirks
-	s2both --force $OPTS 
-}
+if [ "$SUSPEND_HYBRID_METHOD" = "none" ] && \
+    grep -q mem /sys/power/state && \
+    command_exists s2both && \
+    [ "$HIBERNATE_METHOD" = "uswsusp" ]; then
+    SUSPEND_HYBRID_METHOD=uswsusp
 
-sleep_method_help()
-{
-	echo  # first echo makes it look nicer.
-	echo "Video quirk handler options:"
-	echo
-	echo "  --quirk-dpms-on"
-	echo "  --quirk-dpms-suspend"
-	echo "  --quirk-radeon-off"
-	echo "  --quirk-reset-brightness"
-	echo "  --quirk-s3-bios"
-	echo "  --quirk-s3-mode"
-	echo "  --quirk-vbe-post"
-	echo "  --quirk-vbemode-restore"
-	echo "  --quirk-vbestate-restore"
-	echo "  --quirk-vga-mode3"
-	echo "  --quirk-save-pci"
-	echo "  --quirk-none"
-}
+    do_suspend_hybrid()
+    {
+	s2both --force
+    }
+fi

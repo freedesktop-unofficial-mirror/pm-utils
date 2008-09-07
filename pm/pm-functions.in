@@ -44,6 +44,9 @@ DROP_PARAMETERS=""
 PARAMETERS="${STORAGEDIR}/parameters"
 INHIBIT="${STORAGEDIR}/inhibit"
 PM_CMDLINE="$*"
+SUSPEND_METHOD="none"
+HIBERNATE_METHOD="none"
+SUSPEND_HYBRID_METHOD="none"
 
 # when loading configuration files, allow stash-specific ones
 # to override the pm-utils global ones.
@@ -203,12 +206,49 @@ init_logfile()
 	exec > "$1" 2>&1
 }
 
-
-SLEEP_FUNCTIONS="${PM_UTILS_LIBDIR}/module.d/${SLEEP_MODULE}"
-[ -f "${SLEEP_FUNCTIONS}" ] || { 
-	echo "Requested sleep module $SLEEP_MODULE not available."
-	exit 1
+check_suspend() {
+    [ "$SUSPEND_METHOD" != "none" ]
 }
 
-. "${SLEEP_FUNCTIONS}"
+check_hibernate() {
+    [ "$HIBERNATE_METHOD" != "none" ]
+}
 
+check_suspend_hybrid() {
+    [ "$SUSPEND_HYBRID_METHOD" != "none" ]
+}
+
+if [ "$SLEEP_MODULE" = "auto" ]; then 
+    SLEEP_MODULE="tuxonice uswsusp"
+fi
+
+SLEEP_FUNCTIONS="${PM_UTILS_LIBDIR}/module.d"
+
+for sleep_method in $SLEEP_MODULE; do
+    [ -f "${SLEEP_FUNCTIONS}/$sleep_method" ] || continue
+    . "${SLEEP_FUNCTIONS}/${sleep_method}"
+done
+
+# fall back on kernel methods if not already claimed
+if [ "$SUSPEND_METHOD" = "none" ]; then
+    # prefer /sys/power/state over /dev/pmu if both exist
+    if grep -q mem /sys/power/state; then
+	SUSPEND_METHOD=kernel
+	do_suspend() { echo -n mem >/sys/power/state; }
+    elif [ -c /dev/pmu ] && pm-pmu --check; then
+	SUSPEND_METHOD=kernel
+	do_suspend() { pm-pmu --suspend; }
+    fi
+fi
+
+if [ "$HIBERNATE_METHOD" = "none" ] && \
+    [ -f /sys/power/disk ] && grep -q disk /sys/power/state; then
+    HIBERNATE_METHOD=kernel
+    do_hibernate()
+    {
+	[ -n "${HIBERNATE_MODE}" ] && \
+	    grep -qw "${HIBERNATE_MODE}" /sys/power/disk && \
+	    echo -n "${HIBERNATE_MODE}" > /sys/power/disk
+	echo -n "disk" > /sys/power/state
+    }
+fi
