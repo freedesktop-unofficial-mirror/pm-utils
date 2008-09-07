@@ -17,7 +17,7 @@
 quirk_count=0
 incr_qc() { quirk_count=$(($quirk_count + 1)); }
 # commandline parser functions		
-cmdl_quirk_dpms_on() 		{ incr_qc; cQUIRK_DPMS_ON="true"; }
+cmdl_quirk_dpms_on() 		{ incr_qc; QUIRK_DPMS_ON="true"; }
 cmdl_quirk_dpms_suspend() 	{ incr_qc; QUIRK_DPMS_SUSPEND="true"; }
 cmdl_quirk_radeon_off() 	{ incr_qc; QUIRK_RADEON_OFF="true"; }
 cmdl_quirk_reset_brightness() 	{ incr_qc; QUIRK_RESET_BRIGHTNESS="true"; }
