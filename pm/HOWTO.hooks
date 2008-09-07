@@ -2,23 +2,27 @@ How to write a pm-utils hook:
 
 PARAMETERS
 
-A pm-utils hook is simply an executable file that accepts a single parameter.
-For hooks in sleep.d, the potential values of that parameter are:
+A pm-utils hook is simply an executable file that accepts at least one 
+parameter. 
+
+For hooks in sleep.d, the potential values of the first parameter are:
 suspend -- The hook MUST perform whatever action is appropriate when the
-	system is preparing for S3 sleep (or its equivalent).
-suspend_hybrid -- The hook MUST perform whatever action is appropriate 
-		  when entering suspend mode.  The hook SHOULD also save
-		  any state it may need to bring the system back from 
-		  hibernate mode.
+	   system is preparing for memory sleep (or its equivalent).
 resume -- The hook MUST perform whatever action is appropriate when the 
 	system is coming out of suspend.
+
 hibernate -- The hook MUST perform whatever action is appropriate when 
 	the system is preparing for suspend-to-disk.
 thaw -- The hook MUST perform whatever action is appropriate when the system
 	is coming out of suspend-to-disk.
+
 help -- If your hook parses the PM_CMDLINE environment variable for switches, 
 	this function SHOULD output text describing the parameters it parses
 	in a format easily understandable by an end-user.
+
+The actual sleep method being used will be passed as the second parameter -- 
+if your hook needs to handle suspend-hybrid (or any other platform-specific
+sleep method), it should examine the second parameter.
 
 For hooks in power.d, the potential values of that parameter are:
 true -- the hook MUST perform whatever action is appropriate when the system 
@@ -29,6 +33,19 @@ false -- The hook MUST perform whatever action is appropriate when the system
 NAMING SCHEME
 
 All hooks are run in lexical sort order according to the C locale.
+
+HOOK EXIT CODES
+
+In normal operation, hooks should only return either 0 or 254 as exit codes.
+0 indicates that the hook performed its task normally.
+254 indicates that the hook is not applicable to this system.
+
+Any other return code is interpreted by the pm-utils machinery as a signal 
+from the hook that it should abort whatever it is doing. When running sleep.d
+hooks, that means that pm-utils stops running hooks, aborts the suspend/resume
+process, calls any hooks that ran sucessfully prior to this one with the 
+appropriate wakeup options, and exits with a non-zero exit code. When running
+power.d hooks, any hooks after this one will be skipped.
 
 SLEEP.D SPECIFIC NOTES
 
@@ -100,3 +117,8 @@ the hook. This will make the following convenience functions available:
 	a parameter named '--help-me'.
 	parse_cmdl does not currently know about options passed to parameters.
 	That feature will be added in a later release.
+13: inhibit
+	Inhibit the suspend/hibernate process.  pm-utils will not try to
+	hibernate the system after this function is called.
+14: inhibited
+	Test to see if inhibit has been called.

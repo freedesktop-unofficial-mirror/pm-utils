@@ -25,7 +25,7 @@
 #
 
 # The rule here? Simplicity.
-
+export STASHNAME=pm-suspend
 . "@PM-UTILS-LIBDIR@/pm-functions"
 
 cmdl_help()
@@ -42,10 +42,24 @@ if [ "$(id -u)" != "0" ]; then
 	echo This utility may only be run by the root user. 1>&2
 	exit 1
 fi
-take_suspend_lock || exit 1
+
+remove_suspend_lock()
+{
+	release_lock "${STASHNAME}.lock"
+}
+
+try_lock "${STASHNAME}.lock" || exit 1
 
 # make sure we release the lock no matter how we exit
 trap remove_suspend_lock 0
+
+# clean up from the last run
+rm -rf "${STORAGEDIR}"
+mkdir -p "${STORAGEDIR}"
+# save our parameter list.
+[ -f "$PARAMETERS" ] || echo '' >"$PARAMETERS"
+add_parameters $PM_CMDLINE
+update_parameters
 
 parse_cmdline
 
@@ -73,14 +87,10 @@ log "Initial commandline parameters: $PM_CMDLINE"
 load_hook_blacklist
 load_hook_parameters
 
-# Make sure we are not inhibited before we start.
-rm -f "${INHIBIT}"
-
 # run the sleep hooks
 log "$(date): Running hooks for $ACTION."
-run_hooks sleep "$ACTION"
-# Sleep only if we know how and if a hook did not inhibit us.
-if [ ! -e "$INHIBIT" ]; then
+if run_hooks sleep "$ACTION $METHOD"; then
+        # Sleep only if we know how and if a hook did not inhibit us.
 	log "$(date): performing $METHOD"
 	sync
 	"do_$METHOD"
@@ -90,5 +100,8 @@ else
 fi
 log "$(date): Running hooks for $REVERSE"
 # run the sleep hooks in reverse with the wakeup action
-run_hooks sleep "$REVERSE" reverse
-log "$(date): Finished."
+if run_hooks sleep "$REVERSE $METHOD" reverse; then
+        log "$(date): Finished."
+else 
+        exit 1
+fi
