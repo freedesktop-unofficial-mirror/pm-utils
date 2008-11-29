@@ -44,9 +44,11 @@ to_vt63()
 
 from_vt63()
 {
+	[ "$SWITCHED" = "true" ] && return
 	state_exists console || return 0
 	chvt "$(restorestate console)"
 	deallocvt 63
+	SWITCHED=true
 }
 
 
@@ -210,16 +212,20 @@ help() {
 
 case "$1" in
 	suspend) suspend_video ;;
-	hibernate)
+	hibernate) 
+		# People do all sorts of crazy things with splash screens
+		# and whatnot across hibernate/thaw.
+		# Try to keep things from exploding when they do.
+		to_vt63; 
 		if [ "$HIBERNATE_RESUME_POST_VIDEO" = "yes" ]; then
 			suspend_video
 		fi
 		;;
 	resume) resume_video ;;
-	thaw)
-		if [ "${HIBERNATE_RESUME_POST_VIDEO}" = "yes" ]; then
+	thaw) 	if [ "${HIBERNATE_RESUME_POST_VIDEO}" = "yes" ]; then
 			resume_video
 		fi
+		from_vt63
 		;;
 	help) help ;;
 esac
