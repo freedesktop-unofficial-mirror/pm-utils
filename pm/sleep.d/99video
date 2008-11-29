@@ -33,6 +33,23 @@ for opt in $PM_CMDLINE; do
 	esac
 done
 
+to_vt63()
+{
+	[ "$SWITCHED" = "true" ] && return 0
+	[ "$MODE" = "suspend" ] || return 0
+	fgconsole |savestate console
+	chvt 63
+	SWITCHED=true
+}
+
+from_vt63()
+{
+	state_exists console || return 0
+	chvt "$(restorestate console)"
+	deallocvt 63
+}
+
+
 reset_brightness()
 {
 	for bl in /sys/class/backlight/* ; do
@@ -44,13 +61,13 @@ reset_brightness()
 }
 
 if command_exists vbetool; then
-	vbe() { vbetool "$@"; }
+	vbe() { to_vt63; vbetool "$@"; }
 else 
 	vbe() { echo "vbetool not installed!" 1>&2; return 1; }
 fi
 
 if command_exists radeontool; then
-	radeon() { radeontool "$@"; }
+	radeon() { to_vt63; radeontool "$@"; }
 else 
 	radeon() { echo "radeontool not found" 1>&2; return 1; }
 fi
@@ -140,12 +157,15 @@ restore_pci()
 
 suspend_video()
 {
+	MODE="suspend"
 	# 0=nothing, 1=s3_bios, 2=s3_mode, 3=both
 	local acpi_flag=0
 	quirk "${QUIRK_S3_BIOS}" && 		acpi_flag=$(($acpi_flag + 1))
 	quirk "${QUIRK_S3_MODE}" && 		acpi_flag=$(($acpi_flag + 2))
 	sysctl -w kernel.acpi_video_flags=$acpi_flag
-	
+
+	# posting the video card in X would be Bad.  Make sure we don't.
+	quirk "${QUIRK_VBE_POST}" && 		to_vt63 
 	quirk "${QUIRK_NOFB}" && 		die_if_framebuffer
 	quirk "${QUIRK_VBESTATE_RESTORE}" && 	vbe_savestate
 	quirk "${QUIRK_VBEMODE_RESTORE}" && 	vbe_savemode
@@ -157,6 +177,7 @@ suspend_video()
 }
 resume_video()
 {
+	MODE="resume"
 	# We might need to do one or many of these quirks
 	quirk "${QUIRK_PCI_SAVE}" && 		pci_restore
 	quirk "${QUIRK_VBE_POST}" && 		vbe_post
@@ -166,6 +187,7 @@ resume_video()
 	quirk "${QUIRK_RADEON_OFF}" && 		radeon_on
 	quirk "${QUIRK_DPMS_ON}" && 		vbe dpms on
 	quirk "${QUIRK_RESET_BRIGHTNESS}" && 	reset_brightness
+	from_vt63
 	return 0  # avoid spurious hook exit failure message.
 }
 
