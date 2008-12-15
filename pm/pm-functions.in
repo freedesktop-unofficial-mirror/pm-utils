@@ -311,3 +311,17 @@ if [ -z "$HIBERNATE_MODULE" ] && \
 		echo -n "disk" > /sys/power/state
 	}
 fi
+
+_do_sleep() {
+	case $1 in
+		suspend) do_suspend ;;
+		hibernate) do_hibernate ;;
+		suspend_hybrid) do_suspend_hybrid ;;
+	esac
+}
+
+if profiling; then
+	do_sleep() { profile "Time in kernel for $1:" _do_sleep $1; }
+else
+	do_sleep() { _do_sleep $1; }
+fi
